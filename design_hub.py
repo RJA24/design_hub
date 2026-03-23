@@ -1,5 +1,63 @@
 import streamlit as st
+import sqlite3
 
+# --- Database Setup ---
+# This connects to the database and creates the table if it's your first time running it.
+def init_db():
+    conn = sqlite3.connect('design_assets.db')
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS prompts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            prompt_text TEXT
+        )
+    ''')
+    conn.commit()
+    return conn
+
+conn = init_db()
+
+# Set up the page
+st.set_page_config(page_title="Design Organizer", page_icon="🎨", layout="centered")
+st.title("🎨 Design Asset & Prompt Organizer")
+
+tab1, tab2, tab3 = st.tabs(["🎨 Brand Colors", "📝 Prompt Library", "🖼️ Layout References"])
+
+# --- TAB 2: Prompt Library (Now with Database) ---
+with tab2:
+    st.header("Generator Prompts")
+    
+    # Input for new prompts
+    # Example placeholder for a practical design project
+    new_prompt = st.text_area(
+        "Draft a new prompt:", 
+        placeholder="e.g., Safari theme tarpaulin background for Rohan Jace's 8th month milestone, cute jungle animals, pastel green and gold, high resolution"
+    )
+    
+    if st.button("Save Prompt"):
+        if new_prompt:
+            c = conn.cursor()
+            c.execute('INSERT INTO prompts (prompt_text) VALUES (?)', (new_prompt,))
+            conn.commit()
+            st.success("Prompt saved to database!")
+        else:
+            st.warning("Please enter a prompt before saving.")
+            
+    st.divider()
+    
+    # Display saved prompts from the database
+    st.subheader("Your Saved Prompts")
+    c = conn.cursor()
+    c.execute('SELECT prompt_text FROM prompts ORDER BY id DESC')
+    saved_prompts = c.fetchall()
+    
+    if saved_prompts:
+        for prompt in saved_prompts:
+            st.code(prompt[0], language="plaintext")
+    else:
+        st.info("No prompts saved yet.")
+
+# (Keep Tab 1 and Tab 3 from the previous code block here)
 # Set up the page
 st.set_page_config(page_title="Design Organizer", page_icon="🎨", layout="centered")
 
