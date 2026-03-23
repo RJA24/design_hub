@@ -2,6 +2,7 @@ import streamlit as st
 #import os
 from colorthief import ColorThief
 from supabase import create_client, Client
+from streamlit_image_select import image_select
 
 # --- Supabase Cloud Database Setup ---
 # We use @st.cache_resource so Streamlit doesn't reconnect on every button click
@@ -106,38 +107,49 @@ with tab3:
                     st.error(f"Upload failed (You might have already uploaded a file with this name): {e}")
             
     st.divider()
-    
     st.subheader("Your Cloud Gallery")
     
     try:
-        # Fetch the list of files inside your bucket
         files = supabase.storage.from_("design-references").list()
         image_files = [f for f in files if f['name'].endswith(('.png', '.jpg', '.jpeg'))]
         
         if image_files:
-            # Create a 3-column grid
-            cols = st.columns(3)
-            for index, file_data in enumerate(image_files):
+            # Prepare the data for the clickable gallery
+            img_urls = []
+            img_names = []
+            for file_data in image_files:
                 file_name = file_data['name']
-                img_url = supabase.storage.from_("design-references").get_public_url(file_name)
+                img_names.append(file_name)
+                img_urls.append(supabase.storage.from_("design-references").get_public_url(file_name))
+            
+            # --- NEW: The Clickable Image Gallery ---
+            selected_img_url = image_select(
+                label="Click an image to select it",
+                images=img_urls,
+                captions=img_names,
+                use_container_width=True
+            )
+            
+            # --- NEW: Show Delete Button ONLY for the clicked image ---
+            if selected_img_url:
+                # Find the file name that matches the clicked image
+                selected_index = img_urls.index(selected_img_url)
+                selected_name = img_names[selected_index]
                 
-                with cols[index % 3]:
-                    st.image(img_url, caption=file_name, use_container_width=True)
-                    
-                    # --- NEW: Popover Menu ---
-                    # This hides the delete button inside a sleek dropdown menu
-                    with st.popover("⚙️ Options", use_container_width=True):
-                        st.write("Manage Asset")
-                        if st.button("🗑️ Delete Image", key=f"del_img_{file_name}", type="primary", use_container_width=True):
-                            with st.spinner("Deleting..."):
-                                supabase.storage.from_("design-references").remove([file_name])
-                                st.success("Deleted!")
-                                st.rerun()
+                st.markdown(f"**Selected Asset:** `{selected_name}`")
+                
+                if st.button("🗑️ Delete Selected Image", type="primary", key="delete_selected"):
+                    with st.spinner("Deleting..."):
+                        supabase.storage.from_("design-references").remove([selected_name])
+                        st.success("Deleted!")
+                        st.rerun()
+                        
         else:
             st.info("Your cloud gallery is empty. Upload an image above!")
             
     except Exception as e:
         st.error(f"Could not load gallery: {e}")
+        
 # --- TAB 4: Color Extractor ---
 with tab4:
     st.header("🪄 Magic Color Extractor")
