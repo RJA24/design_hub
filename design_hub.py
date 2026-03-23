@@ -77,7 +77,6 @@ with tab2:
     else:
         st.info("No prompts saved in the cloud yet.")
 
-# --- TAB 3: Reference Gallery (Updated) ---
 # --- TAB 3: Reference Gallery (Now with Cloud Storage) ---
 with tab3:
     st.header("Cloud Reference Gallery")
@@ -116,6 +115,7 @@ with tab3:
         image_files = [f for f in files if f['name'].endswith(('.png', '.jpg', '.jpeg'))]
         
         if image_files:
+            # Create a 3-column grid
             cols = st.columns(3)
             for index, file_data in enumerate(image_files):
                 file_name = file_data['name']
@@ -124,14 +124,15 @@ with tab3:
                 with cols[index % 3]:
                     st.image(img_url, caption=file_name, use_container_width=True)
                     
-                    # --- NEW: Delete Button ---
-                    # We use the file_name as the unique key for the button
-                    if st.button("🗑️ Delete", key=f"del_img_{file_name}"):
-                        with st.spinner("Deleting..."):
-                            # Supabase requires the file name in a list to remove it
-                            supabase.storage.from_("design-references").remove([file_name])
-                            st.success("Deleted!")
-                            st.rerun() # Instantly refresh to remove the image from the screen
+                    # --- NEW: Popover Menu ---
+                    # This hides the delete button inside a sleek dropdown menu
+                    with st.popover("⚙️ Options", use_container_width=True):
+                        st.write("Manage Asset")
+                        if st.button("🗑️ Delete Image", key=f"del_img_{file_name}", type="primary", use_container_width=True):
+                            with st.spinner("Deleting..."):
+                                supabase.storage.from_("design-references").remove([file_name])
+                                st.success("Deleted!")
+                                st.rerun()
         else:
             st.info("Your cloud gallery is empty. Upload an image above!")
             
