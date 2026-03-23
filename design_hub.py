@@ -14,10 +14,6 @@ def init_connection():
 
 supabase = init_connection()
 
-# --- Folder Setup (For Local Images) ---
-if not os.path.exists("images"):
-    os.makedirs("images")
-
 # Set up the page
 st.set_page_config(page_title="Design Organizer", page_icon="🎨", layout="centered")
 st.title("🎨 Design Asset & Prompt Organizer")
