@@ -2,4 +2,4 @@ streamlit
 colorthief
 Pillow
 supabase
-streamlit-image-select
+st-clickable-images
