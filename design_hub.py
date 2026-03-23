@@ -113,21 +113,25 @@ with tab3:
     try:
         # Fetch the list of files inside your bucket
         files = supabase.storage.from_("design-references").list()
-        
-        # Filter out hidden system files and ensure we only grab images
         image_files = [f for f in files if f['name'].endswith(('.png', '.jpg', '.jpeg'))]
         
         if image_files:
-            # Create a 3-column grid
             cols = st.columns(3)
             for index, file_data in enumerate(image_files):
                 file_name = file_data['name']
-                
-                # Ask Supabase for the public URL so Streamlit can display it
                 img_url = supabase.storage.from_("design-references").get_public_url(file_name)
                 
                 with cols[index % 3]:
                     st.image(img_url, caption=file_name, use_container_width=True)
+                    
+                    # --- NEW: Delete Button ---
+                    # We use the file_name as the unique key for the button
+                    if st.button("🗑️ Delete", key=f"del_img_{file_name}"):
+                        with st.spinner("Deleting..."):
+                            # Supabase requires the file name in a list to remove it
+                            supabase.storage.from_("design-references").remove([file_name])
+                            st.success("Deleted!")
+                            st.rerun() # Instantly refresh to remove the image from the screen
         else:
             st.info("Your cloud gallery is empty. Upload an image above!")
             
