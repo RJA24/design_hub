@@ -1,1 +1,17 @@
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Streamlit secrets (Never upload passwords or API keys to GitHub!)
+.streamlit/secrets.toml
+
+# Database files (Optional: ignore if you don't want to upload your personal saved data)
+*.db
+*.sqlite3
