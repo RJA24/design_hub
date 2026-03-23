@@ -123,16 +123,17 @@ with tab3:
                 img_urls.append(supabase.storage.from_("design-references").get_public_url(file_name))
             
             # --- NEW: The Clickable Image Gallery ---
+            # --- UPDATED: The Clickable Image Gallery ---
             selected_img_url = image_select(
-                label="Click an image to select it",
+                label="",  # This completely hides the text
                 images=img_urls,
                 captions=img_names,
-                use_container_width=True
+                use_container_width=True,
+                index=-1   # This forces the gallery to start with NOTHING selected
             )
             
-            # --- NEW: Show Delete Button ONLY for the clicked image ---
+            # --- The Delete Button Logic ---
             if selected_img_url:
-                # Find the file name that matches the clicked image
                 selected_index = img_urls.index(selected_img_url)
                 selected_name = img_names[selected_index]
                 
