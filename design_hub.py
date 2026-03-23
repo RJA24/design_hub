@@ -55,16 +55,31 @@ with tab2:
         else:
             st.warning("Please enter a prompt before saving.")
             
+    # ... (Keep the 'Draft a new prompt' section exactly the same) ...
+    
     st.divider()
     
+    # --- UPDATED: Display saved prompts with Delete buttons ---
     st.subheader("Your Saved Prompts")
     c = conn.cursor()
-    c.execute('SELECT prompt_text FROM prompts ORDER BY id DESC')
+    # Notice we are now selecting the 'id' as well as the text
+    c.execute('SELECT id, prompt_text FROM prompts ORDER BY id DESC')
     saved_prompts = c.fetchall()
     
     if saved_prompts:
-        for prompt in saved_prompts:
-            st.code(prompt[0], language="plaintext")
+        for prompt_id, prompt_text in saved_prompts:
+            # Create two columns: a wide one for the code, a narrow one for the button
+            col1, col2 = st.columns([5, 1]) 
+            
+            with col1:
+                st.code(prompt_text, language="plaintext")
+            
+            with col2:
+                # We use the unique database ID to give each button a unique Streamlit key!
+                if st.button("Delete", key=f"delete_{prompt_id}"):
+                    c.execute('DELETE FROM prompts WHERE id = ?', (prompt_id,))
+                    conn.commit()
+                    st.rerun() # This instantly refreshes the page so the prompt disappears
     else:
         st.info("No prompts saved yet.")
 
