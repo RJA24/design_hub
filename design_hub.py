@@ -1,5 +1,11 @@
 import streamlit as st
 import sqlite3
+import os # NEW: Add this to the top of your file
+
+# --- Folder Setup ---
+# Create an images directory if it doesn't exist yet
+if not os.path.exists("images"):
+    os.makedirs("images")
 
 # --- Database Setup ---
 def init_db():
@@ -83,12 +89,42 @@ with tab2:
     else:
         st.info("No prompts saved yet.")
 
-# --- TAB 3: Reference Gallery ---
+# --- TAB 3: Reference Gallery (Updated) ---
 with tab3:
-    st.header("Reference Uploads")
-    st.write("Upload layouts or inspiration images.")
+    st.header("Reference Gallery")
+    st.write("Upload layouts or inspiration images to save them locally.")
     
+    # 1. The Uploader
     uploaded_file = st.file_uploader("Choose an image file", type=["png", "jpg", "jpeg"])
     
     if uploaded_file is not None:
-        st.image(uploaded_file, caption="Uploaded Reference", use_container_width=True)
+        st.image(uploaded_file, caption="Preview", use_container_width=True)
+        
+        # 2. The Save Button
+        if st.button("Save to Gallery"):
+            # Construct the file path (e.g., "images/my_layout.png")
+            file_path = os.path.join("images", uploaded_file.name)
+            
+            # Write the file to the images folder
+            with open(file_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            st.success(f"Saved {uploaded_file.name} permanently!")
+            
+    st.divider()
+    
+    # 3. Displaying the Saved Gallery
+    st.subheader("Saved References")
+    
+    # Get a list of all files in the images folder
+    saved_images = os.listdir("images")
+    
+    if saved_images:
+        # Create a grid layout (3 columns) for the gallery
+        cols = st.columns(3)
+        for index, image_name in enumerate(saved_images):
+            # Display images in a grid by calculating which column to use
+            with cols[index % 3]:
+                img_path = os.path.join("images", image_name)
+                st.image(img_path, caption=image_name, use_container_width=True)
+    else:
+        st.info("Your gallery is empty. Upload an image above to get started!")
