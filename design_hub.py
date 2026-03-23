@@ -1,5 +1,5 @@
 import streamlit as st
-import os
+#import os
 from colorthief import ColorThief
 from supabase import create_client, Client
 
@@ -82,44 +82,61 @@ with tab2:
         st.info("No prompts saved in the cloud yet.")
 
 # --- TAB 3: Reference Gallery (Updated) ---
+# --- TAB 3: Reference Gallery (Now with Cloud Storage) ---
 with tab3:
-    st.header("Reference Gallery")
-    st.write("Upload layouts or inspiration images to save them locally.")
+    st.header("Cloud Reference Gallery")
+    st.write("Upload layouts or inspiration images to save them securely to Supabase.")
     
-    # 1. The Uploader
     uploaded_file = st.file_uploader("Choose an image file", type=["png", "jpg", "jpeg"])
     
     if uploaded_file is not None:
         st.image(uploaded_file, caption="Preview", use_container_width=True)
         
-        # 2. The Save Button
-        if st.button("Save to Gallery"):
-            # Construct the file path (e.g., "images/my_layout.png")
-            file_path = os.path.join("images", uploaded_file.name)
-            
-            # Write the file to the images folder
-            with open(file_path, "wb") as f:
-                f.write(uploaded_file.getbuffer())
-            st.success(f"Saved {uploaded_file.name} permanently!")
+        if st.button("Upload to Cloud"):
+            with st.spinner("Uploading..."):
+                try:
+                    # Convert the Streamlit file to bytes
+                    file_bytes = uploaded_file.getvalue()
+                    file_name = uploaded_file.name
+                    
+                    # Upload directly to the Supabase bucket
+                    supabase.storage.from_("design-references").upload(
+                        file=file_bytes,
+                        path=file_name,
+                        file_options={"content-type": uploaded_file.type}
+                    )
+                    st.success(f"Saved {file_name} permanently to the cloud!")
+                    st.rerun() # Refresh to show the new image below
+                except Exception as e:
+                    st.error(f"Upload failed (You might have already uploaded a file with this name): {e}")
             
     st.divider()
     
-    # 3. Displaying the Saved Gallery
-    st.subheader("Saved References")
+    st.subheader("Your Cloud Gallery")
     
-    # Get a list of all files in the images folder
-    saved_images = os.listdir("images")
-    
-    if saved_images:
-        # Create a grid layout (3 columns) for the gallery
-        cols = st.columns(3)
-        for index, image_name in enumerate(saved_images):
-            # Display images in a grid by calculating which column to use
-            with cols[index % 3]:
-                img_path = os.path.join("images", image_name)
-                st.image(img_path, caption=image_name, use_container_width=True)
-    else:
-        st.info("Your gallery is empty. Upload an image above to get started!")
+    try:
+        # Fetch the list of files inside your bucket
+        files = supabase.storage.from_("design-references").list()
+        
+        # Filter out hidden system files and ensure we only grab images
+        image_files = [f for f in files if f['name'].endswith(('.png', '.jpg', '.jpeg'))]
+        
+        if image_files:
+            # Create a 3-column grid
+            cols = st.columns(3)
+            for index, file_data in enumerate(image_files):
+                file_name = file_data['name']
+                
+                # Ask Supabase for the public URL so Streamlit can display it
+                img_url = supabase.storage.from_("design-references").get_public_url(file_name)
+                
+                with cols[index % 3]:
+                    st.image(img_url, caption=file_name, use_container_width=True)
+        else:
+            st.info("Your cloud gallery is empty. Upload an image above!")
+            
+    except Exception as e:
+        st.error(f"Could not load gallery: {e}")
 # --- TAB 4: Color Extractor ---
 with tab4:
     st.header("🪄 Magic Color Extractor")
