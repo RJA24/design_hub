@@ -1,27 +1,22 @@
 import streamlit as st
-import sqlite3
 import os
 from colorthief import ColorThief
+from supabase import create_client, Client
 
-# --- Folder Setup ---
-# Create an images directory if it doesn't exist yet
+# --- Supabase Cloud Database Setup ---
+# We use @st.cache_resource so Streamlit doesn't reconnect on every button click
+@st.cache_resource
+def init_connection():
+    # This securely pulls the keys you saved in Streamlit's settings
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    return create_client(url, key)
+
+supabase = init_connection()
+
+# --- Folder Setup (For Local Images) ---
 if not os.path.exists("images"):
     os.makedirs("images")
-
-# --- Database Setup ---
-def init_db():
-    conn = sqlite3.connect('design_assets.db')
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS prompts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            prompt_text TEXT
-        )
-    ''')
-    conn.commit()
-    return conn
-
-conn = init_db()
 
 # Set up the page
 st.set_page_config(page_title="Design Organizer", page_icon="🎨", layout="centered")
@@ -43,52 +38,48 @@ with tab1:
         color2 = st.color_picker("Accent Color", "#D81B60")
         st.code(color2, language="plaintext")
 
-# --- TAB 2: Prompt Library ---
+# --- TAB 2: Prompt Library (Now Connected to Cloud) ---
 with tab2:
     st.header("Generator Prompts")
     
     new_prompt = st.text_area(
         "Draft a new prompt:", 
-        placeholder="e.g., Safari theme tarpaulin background, cute jungle animals, pastel green and gold, high resolution"
+        placeholder="e.g., Safari theme tarpaulin background for Rohan Jace's 8th month milestone, cute jungle animals, pastel green and gold..."
     )
     
-    # We only have ONE "Save Prompt" button now!
     if st.button("Save Prompt"):
         if new_prompt:
-            c = conn.cursor()
-            c.execute('INSERT INTO prompts (prompt_text) VALUES (?)', (new_prompt,))
-            conn.commit()
-            st.success("Prompt saved to database!")
+            # Insert into Supabase
+            supabase.table("prompts").insert({"prompt_text": new_prompt}).execute()
+            st.success("Prompt saved to the cloud!")
         else:
             st.warning("Please enter a prompt before saving.")
             
-    # ... (Keep the 'Draft a new prompt' section exactly the same) ...
-    
     st.divider()
     
-    # --- UPDATED: Display saved prompts with Delete buttons ---
-    st.subheader("Your Saved Prompts")
-    c = conn.cursor()
-    # Notice we are now selecting the 'id' as well as the text
-    c.execute('SELECT id, prompt_text FROM prompts ORDER BY id DESC')
-    saved_prompts = c.fetchall()
+    st.subheader("Your Cloud Prompts")
+    
+    # Fetch data from Supabase
+    response = supabase.table("prompts").select("id", "prompt_text").order("id", desc=True).execute()
+    
+    # Supabase returns the data as a list of dictionaries
+    saved_prompts = response.data
     
     if saved_prompts:
-        for prompt_id, prompt_text in saved_prompts:
-            # Create two columns: a wide one for the code, a narrow one for the button
+        for prompt in saved_prompts:
             col1, col2 = st.columns([5, 1]) 
             
             with col1:
-                st.code(prompt_text, language="plaintext")
+                # We extract the text using the dictionary key
+                st.code(prompt["prompt_text"], language="plaintext")
             
             with col2:
-                # We use the unique database ID to give each button a unique Streamlit key!
-                if st.button("Delete", key=f"delete_{prompt_id}"):
-                    c.execute('DELETE FROM prompts WHERE id = ?', (prompt_id,))
-                    conn.commit()
-                    st.rerun() # This instantly refreshes the page so the prompt disappears
+                # We extract the ID using the dictionary key
+                if st.button("Delete", key=f"delete_{prompt['id']}"):
+                    supabase.table("prompts").delete().eq("id", prompt["id"]).execute()
+                    st.rerun()
     else:
-        st.info("No prompts saved yet.")
+        st.info("No prompts saved in the cloud yet.")
 
 # --- TAB 3: Reference Gallery (Updated) ---
 with tab3:
