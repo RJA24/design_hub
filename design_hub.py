@@ -2,7 +2,6 @@ import streamlit as st
 import sqlite3
 
 # --- Database Setup ---
-# This connects to the database and creates the table if it's your first time running it.
 def init_db():
     conn = sqlite3.connect('design_assets.db')
     c = conn.cursor()
@@ -20,20 +19,33 @@ conn = init_db()
 # Set up the page
 st.set_page_config(page_title="Design Organizer", page_icon="🎨", layout="centered")
 st.title("🎨 Design Asset & Prompt Organizer")
+st.markdown("A centralized hub for graphic assets, colors, and generator prompts.")
 
 tab1, tab2, tab3 = st.tabs(["🎨 Brand Colors", "📝 Prompt Library", "🖼️ Layout References"])
 
-# --- TAB 2: Prompt Library (Now with Database) ---
+# --- TAB 1: Brand Colors ---
+with tab1:
+    st.header("Color Palette")
+    st.write("Save your most used hex codes here.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        color1 = st.color_picker("Primary Color", "#1E88E5")
+        st.code(color1, language="plaintext")
+    with col2:
+        color2 = st.color_picker("Accent Color", "#D81B60")
+        st.code(color2, language="plaintext")
+
+# --- TAB 2: Prompt Library ---
 with tab2:
     st.header("Generator Prompts")
     
-    # Input for new prompts
-    # Example placeholder for a practical design project
     new_prompt = st.text_area(
         "Draft a new prompt:", 
-        placeholder="e.g., Safari theme tarpaulin background for Rohan Jace's 8th month milestone, cute jungle animals, pastel green and gold, high resolution"
+        placeholder="e.g., Safari theme tarpaulin background, cute jungle animals, pastel green and gold, high resolution"
     )
     
+    # We only have ONE "Save Prompt" button now!
     if st.button("Save Prompt"):
         if new_prompt:
             c = conn.cursor()
@@ -45,7 +57,6 @@ with tab2:
             
     st.divider()
     
-    # Display saved prompts from the database
     st.subheader("Your Saved Prompts")
     c = conn.cursor()
     c.execute('SELECT prompt_text FROM prompts ORDER BY id DESC')
@@ -56,45 +67,6 @@ with tab2:
             st.code(prompt[0], language="plaintext")
     else:
         st.info("No prompts saved yet.")
-
-# (Keep Tab 1 and Tab 3 from the previous code block here)
-# Set up the page
-st.set_page_config(page_title="Design Organizer", page_icon="🎨", layout="centered")
-
-st.title("🎨 Design Asset & Prompt Organizer")
-st.markdown("A centralized hub for graphic assets, colors, and generator prompts.")
-
-# Create tabs for different asset types
-tab1, tab2, tab3 = st.tabs(["🎨 Brand Colors", "📝 Prompt Library", "🖼️ Layout References"])
-
-# --- TAB 1: Brand Colors ---
-with tab1:
-    st.header("Color Palette")
-    st.write("Save your most used hex codes here.")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        color1 = st.color_picker("Primary Color", "#1E88E5")
-        st.code(color1, language="plaintext") # Makes the hex code easy to copy
-    with col2:
-        color2 = st.color_picker("Accent Color", "#D81B60")
-        st.code(color2, language="plaintext")
-
-# --- TAB 2: Prompt Library ---
-with tab2:
-    st.header("Generator Prompts")
-    st.write("Store your best text prompts for generating backgrounds and elements.")
-    
-    # Example of a saved prompt
-    st.subheader("Saved Prompt: Corporate Background")
-    st.code("Abstract geometric background, professional blue and silver tones, clean lines, 8k resolution", language="plaintext")
-    
-    st.divider()
-    
-    # Input for new prompts (UI only for now)
-    new_prompt = st.text_area("Draft a new prompt:")
-    if st.button("Save Prompt"):
-        st.success("Prompt drafted! (Database connection needed to save permanently)")
 
 # --- TAB 3: Reference Gallery ---
 with tab3:
