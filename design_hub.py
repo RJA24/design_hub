@@ -1,6 +1,7 @@
-import streamlit as st
+iimport streamlit as st
 import sqlite3
-import os # NEW: Add this to the top of your file
+import os
+from colorthief import ColorThief
 
 # --- Folder Setup ---
 # Create an images directory if it doesn't exist yet
@@ -27,7 +28,7 @@ st.set_page_config(page_title="Design Organizer", page_icon="🎨", layout="cent
 st.title("🎨 Design Asset & Prompt Organizer")
 st.markdown("A centralized hub for graphic assets, colors, and generator prompts.")
 
-tab1, tab2, tab3 = st.tabs(["🎨 Brand Colors", "📝 Prompt Library", "🖼️ Layout References"])
+tab1, tab2, tab3, tab4 = st.tabs(["🎨 Brand Colors", "📝 Prompt Library", "🖼️ Layout References", "🪄 Color Extractor"])
 
 # --- TAB 1: Brand Colors ---
 with tab1:
@@ -128,3 +129,42 @@ with tab3:
                 st.image(img_path, caption=image_name, use_container_width=True)
     else:
         st.info("Your gallery is empty. Upload an image above to get started!")
+# --- TAB 4: Color Extractor ---
+with tab4:
+    st.header("🪄 Magic Color Extractor")
+    st.write("Upload a design photo or reference image to instantly pull its color palette.")
+    
+    # Upload the image
+    palette_image = st.file_uploader("Upload an image for color extraction", type=["png", "jpg", "jpeg"], key="palette_uploader")
+    
+    if palette_image is not None:
+        # Display the uploaded image
+        st.image(palette_image, caption="Analyzing this image...", use_container_width=True)
+        
+        if st.button("Extract Palette"):
+            with st.spinner("Extracting colors..."):
+                try:
+                    # ColorThief reads the Streamlit uploaded file directly
+                    color_thief = ColorThief(palette_image)
+                    
+                    # Get the top 5 dominant colors (returns a list of RGB tuples)
+                    palette = color_thief.get_palette(color_count=5)
+                    
+                    st.subheader("Extracted Color Hex Codes")
+                    
+                    # Create 5 columns to display the colors side-by-side beautifully
+                    cols = st.columns(len(palette))
+                    
+                    for i, color in enumerate(palette):
+                        # Convert RGB (e.g., 255, 255, 255) to a Hex String (e.g., #FFFFFF)
+                        hex_code = "#{:02x}{:02x}{:02x}".format(color[0], color[1], color[2]).upper()
+                        
+                        with cols[i]:
+                            # Use a bit of custom HTML/CSS to draw a colored square
+                            st.markdown(f'''
+                                <div style="background-color: {hex_code}; height: 60px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
+                                <p style="text-align: center; font-family: monospace; font-weight: bold; margin-top: 8px;">{hex_code}</p>
+                            ''', unsafe_allow_html=True)
+                            
+                except Exception as e:
+                    st.error(f"Could not extract colors: {e}")
