@@ -2,7 +2,7 @@ import streamlit as st
 #import os
 from colorthief import ColorThief
 from supabase import create_client, Client
-from streamlit_image_select import image_select
+from st_clickable_images import clickable_images
 
 # --- Supabase Cloud Database Setup ---
 # We use @st.cache_resource so Streamlit doesn't reconnect on every button click
@@ -114,28 +114,27 @@ with tab3:
         image_files = [f for f in files if f['name'].endswith(('.png', '.jpg', '.jpeg'))]
         
         if image_files:
-            # Prepare the data for the clickable gallery
             img_urls = []
             img_names = []
             for file_data in image_files:
                 file_name = file_data['name']
                 img_names.append(file_name)
+                # Supabase gives us the perfect public URL to feed into the clickable grid
                 img_urls.append(supabase.storage.from_("design-references").get_public_url(file_name))
             
-            # --- NEW: The Clickable Image Gallery ---
-            # --- UPDATED: The Clickable Image Gallery ---
-            selected_img_url = image_select(
-                label="",  # This completely hides the text
-                images=img_urls,
-                captions=img_names,
-                use_container_width=True,
-                index=-1   # This forces the gallery to start with NOTHING selected
+            # --- THE NEW CLICKABLE GRID ---
+            # This library defaults to -1 (nothing clicked) and holds its state!
+            clicked_index = clickable_images(
+                img_urls,
+                titles=img_names,
+                div_style={"display": "flex", "flex-wrap": "wrap", "gap": "10px"},
+                img_style={"cursor": "pointer", "height": "200px", "border-radius": "8px", "object-fit": "cover", "width": "31%"}
             )
             
-            # --- The Delete Button Logic ---
-            if selected_img_url:
-                selected_index = img_urls.index(selected_img_url)
-                selected_name = img_names[selected_index]
+            # --- THE DELETE LOGIC ---
+            # It only triggers if an actual image index (0, 1, 2, etc.) is clicked
+            if clicked_index > -1:
+                selected_name = img_names[clicked_index]
                 
                 st.markdown(f"**Selected Asset:** `{selected_name}`")
                 
