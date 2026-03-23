@@ -160,11 +160,13 @@ with tab4:
                         hex_code = "#{:02x}{:02x}{:02x}".format(color[0], color[1], color[2]).upper()
                         
                         with cols[i]:
-                            # Use a bit of custom HTML/CSS to draw a colored square
+                            # Draw the colored square (removed the HTML text so it doesn't duplicate)
                             st.markdown(f'''
-                                <div style="background-color: {hex_code}; height: 60px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
-                                <p style="text-align: center; font-family: monospace; font-weight: bold; margin-top: 8px;">{hex_code}</p>
+                                <div style="background-color: {hex_code}; height: 60px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 8px;"></div>
                             ''', unsafe_allow_html=True)
+                            
+                            # Use Streamlit's native code block for the automatic copy button
+                            st.code(hex_code, language="plaintext")
                             
                 except Exception as e:
                     st.error(f"Could not extract colors: {e}")
